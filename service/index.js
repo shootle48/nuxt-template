@@ -1,5 +1,5 @@
-import * as product from "./product.service";
+import * as room from "./room.service";
 
 export default {
-  product,
+  room,
 };
