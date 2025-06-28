@@ -1,14 +1,5 @@
-<script>
-export default {
-    setup() {
-
-
-        return {}
-    }
-}
-</script>
 <template>
-    <div>
+    <div class="flex flex-col justify-center items-center">
         Header
         <slot></slot>
         Footer
