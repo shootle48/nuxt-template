@@ -1,5 +1,5 @@
-import * as room from "./room.service";
+import * as activities from "./activities.service";
 
 export default {
-  room,
+  activities,
 };
