@@ -5,7 +5,7 @@ const rooms = roomsStore.rooms;
 
 onMounted(async () => {
   console.log("room loaded!");
-  await roomsStore.getRooms();
+  await roomsStore.getMockRooms();
 });
 </script>
 
@@ -22,12 +22,18 @@ onMounted(async () => {
             Room ID: {{ room.id }}
           </div>
           <div class="text-3xl font-extrabold">
-            {{ room.name }}
+            {{ room.room_number }}
           </div>
-          <!-- 🔒 Optional Display -->
-          <div class="text-sm text-gray-200 mt-2">
-            Password Protected: <strong>{{ room.has_password ? 'Yes' : 'No' }}</strong>
+          <div class="text-3xl font-extrabold">
+            {{ room.floor }}
           </div>
+          <div class="text-3xl font-extrabold">
+            {{ room.price }}
+          </div>
+          <div class="text-3xl font-extrabold">
+            {{ room.bed_type }}
+          </div>
+
         </div>
         <div>
           <NuxtLink :to="`/roomDetail/${room.id}`">
@@ -39,7 +45,6 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- ✅ No rooms fallback -->
       <p v-if="rooms.length === 0" class="col-span-full text-center text-gray-600 text-lg">
         No rooms found.
       </p>

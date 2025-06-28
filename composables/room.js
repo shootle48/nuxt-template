@@ -28,9 +28,22 @@ export const useRooms = () => {
       rooms.value = [];
     }
   };
+  const getMockRooms = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    rooms.value = [
+      { id: 1, room_number: "101", floor: 1, price: 1200, bed_type: "Single" },
+      { id: 2, room_number: "202", floor: 2, price: 1500, bed_type: "Double" },
+      { id: 3, room_number: "303", floor: 3, price: 1700, bed_type: "Double" },
+      { id: 4, room_number: "404", floor: 4, price: 2000, bed_type: "Single" },
+      { id: 5, room_number: "505", floor: 5, price: 2500, bed_type: "Double" },
+      { id: 6, room_number: "606", floor: 6, price: 3000, bed_type: "Single" },
+    ];
+  };
 
   return {
     rooms,
     getRooms,
+    getMockRooms,
   };
 };
