@@ -47,15 +47,12 @@ function nextActivity() {
   selectedActivity.value = activities.value[currentIndex.value + 1];
 }
 
-
-
 function openModalUpdate(activity) {
   selectedActivity.value = activity;
   formName.value = activity.name || '';
   formDescription.value = activity.description || '';
   showModalUpdate.value = true;
 }
-
 
 function closeModal() {
   showModalCreate.value = false;
@@ -112,7 +109,6 @@ async function submitUpdateForm(formName, formDescription, id) {
     isSubmitting.value = false
   }
 }
-
 
 async function deleteActivity(id) {
   const confirmed = confirm('Are you sure you want to delete this activity?');
@@ -200,7 +196,6 @@ async function deleteActivity(id) {
     </div>
   </div>
 
-
   <!-- Modal สำหรับดูรายละเอียด Activity -->
   <div v-if="showModalDetail" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
@@ -241,8 +236,6 @@ async function deleteActivity(id) {
       </div>
     </div>
   </div>
-
-
 
   <!-- ส่วนหลักของหน้า -->
   <div class="flex flex-col items-center justify-center p-4 min-h-screen bg-gray-100">
