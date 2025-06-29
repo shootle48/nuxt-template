@@ -18,6 +18,14 @@ export const createActivities = (payload) => {
   })
 }
 
+export const updateActivities = (payload, id) => {
+  return client({
+    method: 'patch',
+    url: `/activities/update/${id}`,
+    data: payload
+  })
+}
+
 export const deleteActivities = (id) => {
   return client({
     method: "delete",

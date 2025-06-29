@@ -1,5 +1,5 @@
 import service from "../service";
-import { ref } from 'vue';
+import { ref } from "vue";
 
 export const useActivities = () => {
   const query = ref({
@@ -45,6 +45,17 @@ export const useActivities = () => {
     }
   };
 
+  const updateActivities = async (payload, id) => {
+    try {
+      await service.activities.updateActivities(payload, id);
+      console.log("update activities successfully!");
+      return true;
+    } catch (err) {
+      console.error("Error Updating activities:", err);
+      return false;
+    }
+  };
+
   const deleteActivities = async (id) => {
     try {
       await service.activities.deleteActivities(id);
@@ -61,6 +72,7 @@ export const useActivities = () => {
     isLoading, // ✅ export loading
     fetchActivities,
     createActivities,
+    updateActivities,
     deleteActivities,
   };
 };
