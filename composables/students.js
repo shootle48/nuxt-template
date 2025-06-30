@@ -1,7 +1,7 @@
 import service from "../service";
 import { ref } from "vue";
 
-export const useActivities = () => {
+export const useStudents = () => {
   const query = ref({
     page: 1,
     limit: 100,
@@ -10,10 +10,10 @@ export const useActivities = () => {
   const activities = ref([]);
   const isLoading = ref(false);
   
-  const fetchActivities = async () => {
+  const fetchStudents = async () => {
     isLoading.value = true;
     try {
-      const res = await service.activities.fetchActivities(query.value);
+      const res = await service.activities.fetchStudents(query.value);
       console.log("Full API Response Data:", res.data);
 
       const fetchedData = res.data.data;
@@ -34,9 +34,9 @@ export const useActivities = () => {
     }
   };
 
-  const createActivities = async (payload) => {
+  const createStudents = async (payload) => {
     try {
-      await service.activities.createActivities(payload);
+      await service.activities.createStudents(payload);
       console.log("create activities successfully!");
       await fetchActivities();
       return true;
@@ -46,9 +46,9 @@ export const useActivities = () => {
     }
   };
 
-  const updateActivities = async (payload, id) => {
+  const updateStudents = async (payload, id) => {
     try {
-      await service.activities.updateActivities(payload, id);
+      await service.activities.updateStudents(payload, id);
       console.log("update activities successfully!");
       return true;
     } catch (err) {
@@ -57,11 +57,11 @@ export const useActivities = () => {
     }
   };
 
-  const deleteActivities = async (id) => {
+  const deleteStudents = async (id) => {
     try {
-      await service.activities.deleteActivities(id);
+      await service.activities.deleteStudents(id);
       console.log("delete activities successfully!");
-      await fetchActivities();
+      await fetchStudents();
     } catch (err) {
       console.error("Error Deleting activities", err);
       return false;
@@ -71,9 +71,9 @@ export const useActivities = () => {
   return {
     activities,
     isLoading, // ✅ export loading
-    fetchActivities,
-    createActivities,
-    updateActivities,
-    deleteActivities,
+    fetchStudents,
+    createStudents,
+    updateStudents,
+    deleteStudents,
   };
 };

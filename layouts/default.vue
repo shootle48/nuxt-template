@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col justify-center items-center">
-        Header
+        Header????
         <slot></slot>
         Footer
     </div>
