@@ -12,7 +12,7 @@ const formDescription = ref('');
 const showModalCreate = ref(false);
 const showModalDetail = ref(false);
 const showModalUpdate = ref(false);
-const selectedActivity = ref(null); // ✅ แก้ชื่อให้ถูก
+const selectedActivity = ref(null);
 
 const isSubmitting = ref(false);
 const errorMessage = ref('');
@@ -68,13 +68,11 @@ function closeModal() {
 async function submitForm() {
   isSubmitting.value = true;
   errorMessage.value = '';
-
   try {
     const success = await ActivitiesStore.createActivities({
       name: formName.value,
       description: formDescription.value,
     });
-
     if (success) {
       closeModal();
     } else {
@@ -90,13 +88,11 @@ async function submitForm() {
 async function submitUpdateForm(formName, formDescription, id) {
   isSubmitting.value = true
   errorMessage.value = ''
-
   try {
     const success = await ActivitiesStore.updateActivities({
       name: formName,
       description: formDescription
     }, id)
-
     if (success) {
       await ActivitiesStore.fetchActivities()
       closeModal()
@@ -113,7 +109,6 @@ async function submitUpdateForm(formName, formDescription, id) {
 async function deleteActivity(id) {
   const confirmed = confirm('Are you sure you want to delete this activity?');
   if (!confirmed) return;
-
   try {
     await ActivitiesStore.deleteActivities(id);
     await ActivitiesStore.fetchActivities();
@@ -124,6 +119,7 @@ async function deleteActivity(id) {
 </script>
 
 <template>
+
   <!-- Modal สำหรับสร้าง Activity -->
   <div v-if="showModalCreate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
@@ -186,6 +182,13 @@ async function deleteActivity(id) {
         </div>
 
         <div class="flex justify-end">
+          <div class="absolute bottom-10 left-8">
+            <button @click="deleteActivity(selectedActivity.id)"
+              class="bg-black text-red-600 hover:text-white hover:bg-red-600 font-bold rounded-full w-8    h-8 flex items-center justify-center transition"
+              title="Delete Activity">
+              🗑️
+            </button>
+          </div>
           <button type="submit" :disabled="isSubmitting"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
             <span v-if="isSubmitting">Updating...</span>
@@ -238,7 +241,7 @@ async function deleteActivity(id) {
   </div>
 
   <!-- ส่วนหลักของหน้า -->
-  <div class="flex flex-col items-center justify-center p-4 min-h-screen bg-gray-100">
+  <div class="flex flex-col items-center justify-center p-4 min-h-screen">
     <div class="flex gap-4 mb-6 items-center">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Available activities</h1>
       <button @click="openModalCreate"
@@ -246,42 +249,40 @@ async function deleteActivity(id) {
         ➕
       </button>
     </div>
-
+    <div v-if="activities.length === 0" class="text-gray-600 text-lg text-center py-8">
+      ไม่มีกิจกรรมตอนนี้ เพิ่มกิจกรรมใหม่ได้เลย 🚀
+    </div>
     <!-- แสดง Loading ขณะโหลด -->
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
       <div v-for="n in 3" :key="n" class="bg-gray-300 rounded-xl p-6 animate-pulse h-48"></div>
     </div>
 
     <!-- แสดงกิจกรรมหลังโหลด -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <div v-for="activity in activities" :key="activity.id"
-        class="bg-rose-500 relative rounded-xl p-6 text-white flex flex-col items-center gap-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        class="bg-rose-500 relative rounded-xl p-6 text-white flex flex-col shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-full">
 
-        <!-- ปุ่มลบ -->
         <!-- ปุ่มตั้งค่า (ซ้าย) และปุ่มลบ (ขวา) -->
-        <div class="absolute top-2 left-2 flex gap-2">
+        <div class="absolute top-2 right-2 flex gap-2">
           <button @click="openModalUpdate(activity)"
             class="bg-white text-blue-600 hover:text-white hover:bg-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center transition"
             title="Settings">
             ⚙️
           </button>
         </div>
-
-        <div class="absolute top-2 right-2">
-          <button @click="deleteActivity(activity.id)"
-            class="bg-white text-red-600 hover:text-white hover:bg-red-600 font-bold rounded-full w-8 h-8 flex items-center justify-center transition"
-            title="Delete Activity">
-            🗑️
-          </button>
+        <!-- เนื้อหาหลัก - ใช้ flex-grow เพื่อให้ขยายเต็มพื้นที่ -->
+        <div class="flex flex-col justify-center items-center">
+          <div class="text-xl font-extrabold mb-2 text-center">{{ activity.name }}</div>
+          <hr class="h-0.5 w-full bg-white mb-2">
+        </div>
+        <div class="flex-grow flex flex-col justify-center items-center pt-8 pb-4">
+          <div class="text-center">
+            <div class="text-lg font-extrabold">{{ activity.description }}</div>
+          </div>
         </div>
 
-
-        <div class="flex flex-col items-center">
-          <div class="text-3xl font-extrabold">{{ activity.name }}</div>
-          <div class="text-3xl font-extrabold">{{ activity.description }}</div>
-        </div>
-
-        <div class="flex gap-4">
+        <!-- ปุ่มอยู่ข้างล่างสุดเสมอ -->
+        <div class="flex gap-4 items-center justify-center mt-auto">
           <button @click="openModalDetail(activity)"
             class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition hover:scale-105 focus:ring-purple-500">
             ดูรายละเอียด
