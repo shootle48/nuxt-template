@@ -8,7 +8,7 @@ export const useActivities = () => {
   });
 
   const activities = ref([]);
-  const isLoading = ref(false); // ✅ เพิ่ม state loading
+  const isLoading = ref(false);
 
   const fetchActivities = async () => {
     isLoading.value = true;

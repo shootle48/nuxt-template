@@ -1,298 +1,252 @@
-<script setup>
-import { ref, onMounted } from 'vue';
-import { useActivities } from '../composables/activities';
+    
+    <script setup>
+    import { ref, onMounted } from 'vue'
+    import dayjs from 'dayjs'
+    import 'dayjs/locale/th'
 
-const ActivitiesStore = useActivities();
-const activities = ActivitiesStore.activities;
-const isLoading = ActivitiesStore.isLoading;
+    const ActivitiesStore = useActivities()
+    const activities = ActivitiesStore.activities
 
-const formName = ref('');
-const formDescription = ref('');
+    const showModal = ref(false)
+    const editingActivity = ref(null)
+    const form = ref({
+      name: '',
+      description: '',
+      release_date: ''
+    })
 
-const showModalCreate = ref(false);
-const showModalDetail = ref(false);
-const showModalUpdate = ref(false);
-const selectedActivity = ref(null);
-
-const isSubmitting = ref(false);
-const errorMessage = ref('');
-
-const currentIndex = computed(() => {
-  return activities.value.findIndex(a => a.id === selectedActivity.value?.id)
-})
-
-const isFirst = computed(() => currentIndex.value <= 0)
-const isLast = computed(() => currentIndex.value >= activities.value.length - 1)
-
-onMounted(async () => {
-  await ActivitiesStore.fetchActivities();
-});
-
-function openModalCreate() {
-  showModalCreate.value = true;
-}
-
-function openModalDetail(activity) {
-  selectedActivity.value = activity;
-  showModalDetail.value = true;
-}
-
-function prevActivity() {
-  if (isFirst.value) return;
-  selectedActivity.value = activities.value[currentIndex.value - 1];
-}
-
-function nextActivity() {
-  if (isLast.value) return;
-  selectedActivity.value = activities.value[currentIndex.value + 1];
-}
-
-function openModalUpdate(activity) {
-  selectedActivity.value = activity;
-  formName.value = activity.name || '';
-  formDescription.value = activity.description || '';
-  showModalUpdate.value = true;
-}
-
-function closeModal() {
-  showModalCreate.value = false;
-  showModalDetail.value = false;
-  showModalUpdate.value = false
-  selectedActivity.value = null;
-  formName.value = '';
-  formDescription.value = '';
-  errorMessage.value = '';
-  isSubmitting.value = false;
-}
-
-async function submitForm() {
-  isSubmitting.value = true;
-  errorMessage.value = '';
-  try {
-    const success = await ActivitiesStore.createActivities({
-      name: formName.value,
-      description: formDescription.value,
-    });
-    if (success) {
-      closeModal();
-    } else {
-      errorMessage.value = 'Something went wrong while creating activity.';
+    // format timestamp → readable string
+    const formatDateTime = (date) => {
+      const timestamp = date < 10000000000 ? date * 1000 : date
+      return dayjs(timestamp).locale('th').format('D MMMM YYYY HH:mm:ss น.')
     }
-  } catch (err) {
-    errorMessage.value = 'Error occurred: ' + err.message;
-  } finally {
-    isSubmitting.value = false;
-  }
-}
 
-async function submitUpdateForm(formName, formDescription, id) {
-  isSubmitting.value = true
-  errorMessage.value = ''
-  try {
-    const success = await ActivitiesStore.updateActivities({
-      name: formName,
-      description: formDescription
-    }, id)
-    if (success) {
+    // เปิด modal + fill form
+    const openUpdateModal = (activity) => {
+      editingActivity.value = activity
+      form.value = {
+        name: activity.name,
+        description: activity.description,
+        release_date: dayjs(activity.release_date * 1000).format('YYYY-MM-DD')
+      }
+      showModal.value = true
+    }
+
+    const closeModal = () => {
+      showModal.value = false
+      editingActivity.value = null
+    }
+
+    // บันทึกการแก้ไข
+    const saveUpdate = async () => {
+      if (!editingActivity.value) return
+      await ActivitiesStore.updateActivities({
+        name: form.value.name,
+        description: form.value.description,
+        release_date: form.value.release_date
+          ? Math.floor(new Date(form.value.release_date).getTime() / 1000)
+          : null
+      }, editingActivity.value.id)
       await ActivitiesStore.fetchActivities()
       closeModal()
-    } else {
-      errorMessage.value = 'Something went wrong while updating activity.'
     }
-  } catch (err) {
-    errorMessage.value = 'Error: ' + err.message
-  } finally {
-    isSubmitting.value = false
-  }
-}
 
-async function deleteActivity(id) {
-  const confirmed = confirm('Are you sure you want to delete this activity?');
-  if (!confirmed) return;
-  try {
-    await ActivitiesStore.deleteActivities(id);
-    await ActivitiesStore.fetchActivities();
-  } catch (err) {
-    alert('Failed to delete activity: ' + err.message);
-  }
-}
+    // ลบกิจกรรม
+    const deleteActivity = async (id) => {
+      if (confirm('Are you sure you want to delete this activity?')) {
+        await ActivitiesStore.deleteActivities(id)
+        await ActivitiesStore.fetchActivities()
+      }
+    }
+
+    // โหลดกิจกรรมทั้งหมด
+    onMounted(async () => {
+      await ActivitiesStore.fetchActivities()
+    })
 </script>
-
 <template>
+  <div>
+    <div v-for="activity in activities" :key="activity.id" class="card-container">
+      <button class="update-btn" @click="openUpdateModal(activity)">Update</button>
+      <button class="delete-btn" @click="deleteActivity(activity.id)">Delete</button>
 
-  <!-- Modal สำหรับสร้าง Activity -->
-  <div v-if="showModalCreate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
-      <button @click="closeModal"
-        class="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl font-bold">✖</button>
-
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">Create New Activity</h2>
-
-      <form @submit.prevent="submitForm">
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Name</label>
-          <input v-model="formName" type="text"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400" placeholder="Activity name"
-            required />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Description</label>
-          <textarea v-model="formDescription"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-400"
-            placeholder="Activity description" rows="3" required></textarea>
-        </div>
-
-        <div v-if="errorMessage" class="text-red-500 mb-4 text-sm">
-          {{ errorMessage }}
-        </div>
-
-        <div class="flex justify-end">
-          <button type="submit" :disabled="isSubmitting"
-            class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting">Creating...</span>
-            <span v-else>Create</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal สำหรับอัปเดต Activity -->
-  <div v-if="showModalUpdate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
-      <button @click="closeModal"
-        class="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl font-bold">✖</button>
-
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">อัปเดตกิจกรรม</h2>
-
-      <form @submit.prevent="submitUpdateForm(formName, formDescription, selectedActivity.id)">
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">ชื่อกิจกรรม</label>
-          <input v-model="formName" type="text"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400" placeholder="Activity name"
-            required />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Description</label>
-          <textarea v-model="formDescription"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
-            placeholder="Activity description" rows="3" required></textarea>
-        </div>
-
-        <div class="flex justify-end">
-          <div class="absolute bottom-10 left-8">
-            <button @click="deleteActivity(selectedActivity.id)"
-              class="bg-black text-red-600 hover:text-white hover:bg-red-600 font-bold rounded-full w-8    h-8 flex items-center justify-center transition"
-              title="Delete Activity">
-              🗑️
-            </button>
-          </div>
-          <button type="submit" :disabled="isSubmitting"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting">Updating...</span>
-            <span v-else>Update</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal สำหรับดูรายละเอียด Activity -->
-  <div v-if="showModalDetail" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
-      <button @click="closeModal"
-        class="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl font-bold">✖</button>
-
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">รายละเอียดกิจกรรม</h2>
-
-      <!-- ปุ่มลูกศรเลื่อนกิจกรรม -->
-      <div class="flex justify-between items-center mb-4">
-        <button @click="prevActivity" :disabled="isFirst" class="text-2xl font-bold px-3 py-1 rounded-full transition"
-          :class="isFirst ? 'text-gray-300 cursor-not-allowed' : 'text-purple-600 hover:text-purple-800'">
-          ◀
-        </button>
-
-        <button @click="nextActivity" :disabled="isLast" class="text-2xl font-bold px-3 py-1 rounded-full transition"
-          :class="isLast ? 'text-gray-300 cursor-not-allowed' : 'text-purple-600 hover:text-purple-800'">
-          ▶
-        </button>
-      </div>
-
-
-      <div class="mb-4">
-        <label class="block text-gray-700 font-semibold mb-2">ชื่อกิจกรรม</label>
-        <p class="text-gray-800">{{ selectedActivity?.name || '-' }}</p>
-      </div>
-
-      <div class="mb-4">
-        <label class="block text-gray-700 font-semibold mb-2">Description</label>
-        <p class="text-gray-800">{{ selectedActivity?.description || '-' }}</p>
-      </div>
-
-      <div>
-        <button
-          class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition hover:scale-105 focus:ring-purple-500">
-          ลงทะเบียน
-        </button>
+      <div class="card-content">
+        <p class="title">{{ activity.name }}</p>
+        <p class="timestamp">{{ formatDateTime(activity.created_at) }}</p>
+        <p class="description">{{ activity.description }}</p>
+        <p class="timestamp">Release Date: {{ formatDateTime(activity.release_date) }}</p>
       </div>
     </div>
-  </div>
 
-  <!-- ส่วนหลักของหน้า -->
-  <div class="flex flex-col items-center justify-center p-4 min-h-screen">
-    <div class="flex gap-4 mb-6 items-center">
-      <h1 class="text-3xl font-bold text-gray-800 mb-4">Available activities</h1>
-      <button @click="openModalCreate"
-        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 hover:scale-105 focus:ring-2 focus:ring-green-400">
-        ➕
-      </button>
-    </div>
-    <div v-if="activities.length === 0" class="text-gray-600 text-lg text-center py-8">
-      ไม่มีกิจกรรมตอนนี้ เพิ่มกิจกรรมใหม่ได้เลย 🚀
-    </div>
-    <!-- แสดง Loading ขณะโหลด -->
-    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
-      <div v-for="n in 3" :key="n" class="bg-gray-300 rounded-xl p-6 animate-pulse h-48"></div>
+    <div class="create-wrapper">
+      <NuxtLink to="/create">
+        <button class="create-btn">Create</button>
+      </NuxtLink>
     </div>
 
-    <!-- แสดงกิจกรรมหลังโหลด -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-      <div v-for="activity in activities" :key="activity.id"
-        class="bg-rose-500 relative rounded-xl p-6 text-white flex flex-col shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-full">
+    <!-- Update Modal -->
+    <div v-if="showModal" class="modal-backdrop">
+      <div class="modal">
+        <h2>Update Activity</h2>
 
-        <!-- ปุ่มตั้งค่า (ซ้าย) และปุ่มลบ (ขวา) -->
-        <div class="absolute top-2 right-2 flex gap-2">
-          <button @click="openModalUpdate(activity)"
-            class="bg-white text-blue-600 hover:text-white hover:bg-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center transition"
-            title="Settings">
-            ⚙️
-          </button>
-        </div>
-        <!-- เนื้อหาหลัก - ใช้ flex-grow เพื่อให้ขยายเต็มพื้นที่ -->
-        <div class="flex flex-col justify-center items-center">
-          <div class="text-xl font-extrabold mb-2 text-center">{{ activity.name }}</div>
-          <hr class="h-0.5 w-full bg-white mb-2">
-        </div>
-        <div class="flex-grow flex flex-col justify-center items-center pt-8 pb-4">
-          <div class="text-center">
-            <div class="text-lg font-extrabold">{{ activity.description }}</div>
-          </div>
+        <div class="form-group">
+          <label>Name:</label>
+          <input v-model="form.name" type="text" class="form-input" />
         </div>
 
-        <!-- ปุ่มอยู่ข้างล่างสุดเสมอ -->
-        <div class="flex gap-4 items-center justify-center mt-auto">
-          <button @click="openModalDetail(activity)"
-            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition hover:scale-105 focus:ring-purple-500">
-            ดูรายละเอียด
-          </button>
-          <button
-            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition hover:scale-105 focus:ring-purple-500">
-            ลงทะเบียน
-          </button>
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea v-model="form.description" class="form-input" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Release Date:</label>
+          <input v-model="form.release_date" type="date" class="form-input" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="save-btn" @click="saveUpdate">Save</button>
+          <button class="cancel-btn" @click="closeModal">Cancel</button>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.card-container {
+  position: relative;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.update-btn,
+.delete-btn {
+  position: absolute;
+  top: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: white;
+  cursor: pointer;
+}
+
+.update-btn {
+  right: 0.75rem;
+  background-color: #3b82f6;
+}
+
+.update-btn:hover {
+  background-color: #2563eb;
+}
+
+.delete-btn {
+  left: 0.75rem;
+  background-color: #ef4444;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+}
+
+.card-content .title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.card-content .timestamp {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-content .description {
+  font-size: 1rem;
+  color: #374151;
+}
+
+.create-wrapper {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.create-btn {
+  background-color: #f43f5e;
+  border-radius: 1rem;
+  color: white;
+  padding: 1rem 2rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.create-btn:hover {
+  background-color: #e11d48;
+}
+
+/* ✅ Modal Styling */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.save-btn {
+  background-color: #10b981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.save-btn:hover {
+  background-color: #059669;
+}
+
+.cancel-btn {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.cancel-btn:hover {
+  background-color: #dc2626;
+}
+</style>
