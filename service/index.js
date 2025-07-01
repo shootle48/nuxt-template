@@ -1,7 +1,9 @@
 import * as activities from "./activities.service";
-import * as students from "./student.service";
+import * as pokemons from "./Pokemon.service"
+import * as auth from "./auth.service"
 
 export default {
   activities,
-  students,
+  pokemons,
+  auth
 };

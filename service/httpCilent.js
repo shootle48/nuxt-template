@@ -2,16 +2,25 @@ import axios from "axios";
 
 export const client = (ops) => {
   const config = useRuntimeConfig();
+  const token = useCookie("token"); // หรือ 'refToken' ถ้าคุณใช้ชื่อนี้
 
-  let api = axios.create();
+  const api = axios.create({
+    baseURL: ops.baseURL || config.public.API_BASE,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token.value && { Authorization: `Bearer ${token.value}` }),
+    },
+    validateStatus: () => true,
+  });
 
-  api.defaults.baseURL = config.public.API_BASE;
-  api.defaults.headers.common["Content-Type"] = "application/json";
-
-  api.defaults.validateStatus = false;
+  api.interceptors.request.use((config) => {
+    const token = useCookie("token");
+    if (token.value) {
+      config.headers.Authorization = `Bearer ${token.value}`;
+    }
+    return config;
+  });
   ops.method = ops.method.toLowerCase();
 
-  return api({
-    ...ops,
-  });
+  return api({ ...ops });
 };
