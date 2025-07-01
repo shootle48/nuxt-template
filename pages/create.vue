@@ -24,7 +24,6 @@
 </template>
 
 <script setup>
-
 const router = useRouter()
 const ActivitiesStore = useActivities()
 

@@ -14,9 +14,9 @@ export const createActivities = (payload) => {
   return client({
     method: "post",
     url: "/activities/create",
-    data: payload
-  })
-}
+    data: payload,
+  });
+};
 
 export const updateActivities = (payload, id) => {
   return client({
