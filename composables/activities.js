@@ -8,7 +8,7 @@ export const useActivities = () => {
   });
 
   const activities = ref([]);
-  const isLoading = ref(false); // ✅ เพิ่ม state loading
+  const isLoading = ref(false);
 
   const fetchActivities = async () => {
     isLoading.value = true;
@@ -20,6 +20,8 @@ export const useActivities = () => {
         id: item.id,
         name: item.name,
         description: item.description,
+        release_date: item.release_date,
+        created_at: item.created_at,
       }));
       console.log("activities updated:", activities.value);
     } catch (err) {
@@ -66,7 +68,7 @@ export const useActivities = () => {
 
   return {
     activities,
-    isLoading, // ✅ export loading
+    isLoading,
     fetchActivities,
     createActivities,
     updateActivities,
