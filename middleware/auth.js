@@ -48,17 +48,23 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       return navigateTo(redirectPath);
     }
 
-    // ตรวจสอบสิทธิ์เข้าถึง admin
-    const userRole = decoded.permission || decoded.role || "user";
+    // ตรวจสอบสิทธิ์เข้าถึง admin - ใช้ข้อมูลจาก user object
     if (to.path.startsWith("/admin")) {
+      const userRole = user.value?.permission || user.value?.role || decoded.permission || decoded.role || "user";
+      console.log('Checking admin access for role:', userRole);
+      
       if (!["admin", "super_admin"].includes(userRole)) {
-        console.log('Access denied to admin area');
-        return navigateTo("/");
+        console.log('Access denied to admin area, role:', userRole);
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Access denied. Admin privileges required.'
+        });
       }
     }
 
     // Redirect จาก root path ตาม role
     if (to.path === "/") {
+      const userRole = user.value?.permission || user.value?.role || "user";
       const redirectPath = getRedirectPath(userRole);
       if (redirectPath !== "/" && userRole === "admin") {
         console.log('Redirecting admin to admin area');
@@ -67,7 +73,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
   } catch (e) {
-    console.error("Invalid JWT:", e);
+    console.error("Auth middleware error:", e);
     tokenCookie.value = null;
     if (!isPublicRoute) {
       return navigateTo("/login");

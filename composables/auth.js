@@ -6,8 +6,14 @@ export const useAuth = () => {
   const isLoading = ref(false);
 
   const isAuthenticated = computed(() => !!user.value);
-  const isAdmin = computed(() => user.value?.permission === "admin");
-  const isUser = computed(() => user.value?.permission === "user");
+  const isAdmin = computed(() => {
+    const role = user.value?.permission || user.value?.role;
+    return ["admin", "super_admin"].includes(role);
+  });
+  const isUser = computed(() => {
+    const role = user.value?.permission || user.value?.role;
+    return role === "user";
+  });
 
   const sendAuth = async (payload) => {
     try {
@@ -33,6 +39,7 @@ export const useAuth = () => {
           email: u.email,
           student_id: u.student_id,
           permission: u.permission || u.role || "user",
+          role: u.role || u.permission || "user",
           exp: jwtDecode(token).exp,
         };
 
@@ -93,8 +100,8 @@ export const useAuth = () => {
   };
 
   const getRedirectPath = (role = null) => {
-    const r = role || user.value?.permission || "user";
-    return r === "admin" ? "/admin" : "/";
+    const r = role || user.value?.permission || user.value?.role || "user";
+    return ["admin", "super_admin"].includes(r) ? "/admin" : "/";
   };
 
   const initializeAuth = async () => {
