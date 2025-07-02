@@ -41,6 +41,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       }
     }
 
+    // รอให้ user data โหลดเสร็จก่อนตรวจสอบสิทธิ์
+    await nextTick();
+
     // ถ้าเป็น public route และมี user แล้ว ให้ redirect ไปหน้าที่เหมาะสม
     if (isPublicRoute && user.value) {
       const redirectPath = getRedirectPath();
@@ -48,25 +51,27 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       return navigateTo(redirectPath);
     }
 
-    // ตรวจสอบสิทธิ์เข้าถึง admin - ใช้ข้อมูลจาก user object
+    // ตรวจสอบสิทธิ์เข้าถึง admin - ใช้ข้อมูลจาก user object หรือ token
     if (to.path.startsWith("/admin")) {
       const userRole = user.value?.permission || user.value?.role || decoded.permission || decoded.role || "user";
       console.log('Checking admin access for role:', userRole);
+      console.log('User object:', user.value);
       
       if (!["admin", "super_admin"].includes(userRole)) {
         console.log('Access denied to admin area, role:', userRole);
         throw createError({
           statusCode: 403,
-          statusMessage: 'Access denied. Admin privileges required.'
+          statusMessage: `Access denied. Admin privileges required. Current role: ${userRole}`
         });
       }
+      console.log('Admin access granted for role:', userRole);
     }
 
     // Redirect จาก root path ตาม role
     if (to.path === "/") {
-      const userRole = user.value?.permission || user.value?.role || "user";
+      const userRole = user.value?.permission || user.value?.role || decoded.permission || decoded.role || "user";
       const redirectPath = getRedirectPath(userRole);
-      if (redirectPath !== "/" && userRole === "admin") {
+      if (redirectPath !== "/" && ["admin", "super_admin"].includes(userRole)) {
         console.log('Redirecting admin to admin area');
         return navigateTo(redirectPath);
       }

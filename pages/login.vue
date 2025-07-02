@@ -46,6 +46,13 @@
                     </NuxtLink>
                 </p>
             </div>
+
+            <!-- Debug Info (เอาออกใน production) -->
+            <div v-if="process.dev" class="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <p><strong>Debug Info:</strong></p>
+                <p>Form: {{ JSON.stringify(form) }}</p>
+                <p>Loading: {{ isLoading }}</p>
+            </div>
         </form>
     </div>
 </template>
@@ -90,7 +97,7 @@ const onLogin = async () => {
             // รอสักครู่แล้วค่อย redirect
             setTimeout(() => {
                 router.push(redirectPath);
-            }, 1000);
+            }, 1500);
 
         } else {
             error.value = result.message || 'Invalid email or password';
