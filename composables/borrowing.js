@@ -126,8 +126,8 @@ export const useBorrowing = () => {
   // Create borrow records
   const createEquipmentBorrowRecord = async (payload) => {
     try {
-      await service.borrowing.createEquipmentBorrowRecord(payload);
-      console.log("Create equipment borrow record successfully!");
+      const res = await service.borrowing.createEquipmentBorrowRecord(payload);
+      console.log("Create equipment borrow record successfully!", res);
       return true;
     } catch (err) {
       console.error("Error creating equipment borrow record:", err);
@@ -137,8 +137,8 @@ export const useBorrowing = () => {
 
   const createMaterialBorrowRecord = async (payload) => {
     try {
-      await service.borrowing.createMaterialBorrowRecord(payload);
-      console.log("Create material borrow record successfully!");
+      const res = await service.borrowing.createMaterialBorrowRecord(payload);
+      console.log("Create material borrow record successfully!", res);
       return true;
     } catch (err) {
       console.error("Error creating material borrow record:", err);

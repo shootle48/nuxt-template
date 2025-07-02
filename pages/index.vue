@@ -35,15 +35,16 @@
       </div>
     </section>
 
-    <!-- ✅ Equipment Section -->
+    <!-- Equipment Section -->
     <section class="mb-8">
-      <h2 class="text-xl font-semibold text-gray-700 mb-4">Available Equipments</h2>
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Available Equipment</h2>
       <div v-if="equipments.length === 0" class="text-gray-500 text-center py-8">
         No equipment available
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="item in availableEquipments" :key="item.id" class="bg-white rounded-lg shadow-md p-4">
           <p class="text-lg font-semibold">{{ item.name }}</p>
+          <p class="text-sm text-gray-600">Asset: {{ item.asset_number }}</p>
           <p class="text-sm text-gray-600">Type: {{ item.type }}</p>
           <p class="text-sm text-gray-600">Location: {{ item.location }}</p>
           <p class="text-sm text-gray-600">Condition: {{ item.condition }}</p>
@@ -57,7 +58,7 @@
       </div>
     </section>
 
-    <!-- ✅ Material Section -->
+    <!-- Material Section -->
     <section>
       <h2 class="text-xl font-semibold text-gray-700 mb-4">Available Materials</h2>
       <div v-if="materials.length === 0" class="text-gray-500 text-center py-8">
@@ -66,11 +67,12 @@
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="material in availableMaterials" :key="material.id" class="bg-white rounded-lg shadow-md p-4">
           <p class="text-lg font-semibold">{{ material.name }}</p>
+          <p class="text-sm text-gray-600">Material No: {{ material.material_number }}</p>
           <p class="text-sm text-gray-600">Type: {{ material.type }}</p>
           <p class="text-sm text-gray-600">Qty: {{ material.quantity }}</p>
           <p class="text-sm text-gray-600">Location: {{ material.location }}</p>
           <p class="text-sm text-gray-600">Purchase Date: {{ formatDate(material.purchase_date) }}</p>
-          <button class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm w-full"
+          <button class="mt-3 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm w-full"
             @click="openBorrowModal('material', material)"
             :disabled="material.quantity <= 0">
             {{ material.quantity > 0 ? 'ยืม' : 'หมด' }}
@@ -194,6 +196,11 @@ const submitBorrowRequest = async () => {
     return
   }
 
+  if (!user.value?.id) {
+    alert('ไม่พบข้อมูลผู้ใช้')
+    return
+  }
+
   const now = Math.floor(Date.now() / 1000)
   const returnDue = now + (borrowForm.value.duration * 24 * 60 * 60)
 
@@ -206,6 +213,8 @@ const submitBorrowRequest = async () => {
     returned: "ยังไม่คืน"
   }
 
+  console.log('Submitting borrow request:', payload)
+
   let success = false
   if (borrowForm.value.item_type === 'equipment') {
     success = await BorrowingStore.createEquipmentBorrowRecord(payload)
@@ -216,6 +225,7 @@ const submitBorrowRequest = async () => {
   if (success) {
     alert('ส่งคำขอยืมเรียบร้อยแล้ว รอการอนุมัติจากผู้ดูแล')
     closeBorrowModal()
+    // Refresh data
     await BorrowingStore.fetchMyEquipmentBorrowRecords()
     await BorrowingStore.fetchMyMaterialBorrowRecords()
   } else {
