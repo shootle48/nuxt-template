@@ -1,4 +1,3 @@
-<!-- pages/login.vue -->
 <template>
     <div class="min-h-screen flex items-center justify-center bg-gray-100">
         <form @submit.prevent="onLogin" class="bg-white p-8 rounded shadow-md w-full max-w-md space-y-5">
@@ -52,7 +51,6 @@
 </template>
 
 <script setup>
-// ใช้ guest middleware เพื่อไม่ให้คนที่ login แล้วเข้าหน้านี้
 definePageMeta({
     middleware: 'guest'
 });
@@ -70,11 +68,9 @@ const { sendAuth, isLoading, getRedirectPath } = useAuth();
 
 const onLogin = async () => {
     try {
-        // Reset messages
         error.value = '';
         success.value = '';
 
-        // ตรวจสอบข้อมูลก่อนส่ง
         if (!form.value.email || !form.value.password) {
             error.value = 'Please fill in all required fields';
             return;
@@ -82,20 +78,13 @@ const onLogin = async () => {
 
         console.log('Attempting login with:', { email: form.value.email });
 
-        // เรียกฟังก์ชั่น login
         const result = await sendAuth(form.value);
 
         if (result.success) {
-            // เก็บ token ลง cookie
-            const token = useCookie('token');
-            token.value = result.token;
-
             success.value = 'Login successful! Redirecting...';
-            console.log('Login successful, user role:', result.user?.permission || result.user?.role);
+            console.log('Login successful, user:', result.user);
 
-            // กำหนดเส้นทาง redirect ตาม role
             const redirectPath = getRedirectPath(result.user?.permission || result.user?.role);
-            
             console.log('Redirecting to:', redirectPath);
 
             // รอสักครู่แล้วค่อย redirect
@@ -112,5 +101,4 @@ const onLogin = async () => {
         error.value = 'An unexpected error occurred. Please try again.';
     }
 };
-
 </script>

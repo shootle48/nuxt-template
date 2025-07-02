@@ -25,6 +25,7 @@ export const useEquipments = () => {
         location: item.location,
         condition: item.condition,
         status: item.status,
+        created_at: item.created_at,
       }));
       console.log("Equipments updated:", equipments.value);
     } catch (err) {
@@ -71,7 +72,7 @@ export const useEquipments = () => {
 
   return {
     equipments,
-    isLoading, // ✅ export loading
+    isLoading,
     fetchEquipments,
     createEquipments,
     updateEquipments,

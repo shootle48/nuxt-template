@@ -24,10 +24,11 @@ export const useMaterials = () => {
         type: item.type,
         quantity: item.quantity,
         location: item.location,
+        created_at: item.created_at,
       }));
-      console.log("Equipments updated:", materials.value);
+      console.log("Materials updated:", materials.value);
     } catch (err) {
-      console.error("Error fetching Equipments:", err);
+      console.error("Error fetching Materials:", err);
       materials.value = [];
     } finally {
       isLoading.value = false;
@@ -37,11 +38,11 @@ export const useMaterials = () => {
   const createMaterials = async (payload) => {
     try {
       await service.material.createMaterials(payload);
-      console.log("create Equipments successfully!");
-      await fetchEquipments();
+      console.log("create Materials successfully!");
+      await fetchMaterials();
       return true;
     } catch (err) {
-      console.error("Error creating Equipments:", err);
+      console.error("Error creating Materials:", err);
       return false;
     }
   };
@@ -49,10 +50,10 @@ export const useMaterials = () => {
   const updateMaterials = async (payload, id) => {
     try {
       await service.material.updateMaterials(payload, id);
-      console.log("update Equipments successfully!");
+      console.log("update Materials successfully!");
       return true;
     } catch (err) {
-      console.error("Error Updating Equipments:", err);
+      console.error("Error Updating Materials:", err);
       return false;
     }
   };
@@ -60,17 +61,17 @@ export const useMaterials = () => {
   const deleteMaterials = async (id) => {
     try {
       await service.material.deleteMaterials(id);
-      console.log("delete Equipments successfully!");
-      await fetchEquipments();
+      console.log("delete Materials successfully!");
+      await fetchMaterials();
     } catch (err) {
-      console.error("Error Deleting Equipments", err);
+      console.error("Error Deleting Materials", err);
       return false;
     }
   };
 
   return {
     materials,
-    isLoading, // ✅ export loading
+    isLoading,
     fetchMaterials,
     createMaterials,
     updateMaterials,

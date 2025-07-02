@@ -15,9 +15,9 @@
           </div>
 
           <div class="flex items-center space-x-4">
-            <div class="text-sm text-gray-600">
-              <span class="font-medium">{{ user?.full_name }}</span>
-              <span class="text-xs text-gray-400 ml-1">({{ user?.permission || user?.role }})</span>
+            <div v-if="user" class="text-sm text-gray-600">
+              <span class="font-medium">{{ user.full_name }}</span>
+              <span class="text-xs text-gray-400 ml-1">({{ user.permission || user.role }})</span>
             </div>
             <button @click="handleLogout" class="text-gray-600 hover:text-gray-900 text-sm">
               Logout
@@ -39,12 +39,18 @@
 </template>
 
 <script setup>
-
-const { user, isAuthenticated, isAdmin, isUser, sendLogout } = useAuth()
+const { user, isAuthenticated, isAdmin, isUser, sendLogout, initializeAuth } = useAuth()
 
 const handleLogout = async () => {
   if (confirm('Are you sure you want to logout?')) {
     await sendLogout()
   }
 }
+
+// Initialize auth when layout mounts
+onMounted(async () => {
+  if (!user.value) {
+    await initializeAuth()
+  }
+})
 </script>
