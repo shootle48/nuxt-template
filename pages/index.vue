@@ -20,17 +20,17 @@
         </NuxtLink>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 class="font-semibold text-yellow-800">Pending</h3>
-          <p class="text-2xl font-bold text-yellow-600">{{ myPendingCount }}</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 class="font-semibold text-blue-800">Equipment Borrowed</h3>
+          <p class="text-2xl font-bold text-blue-600">{{ myEquipmentCount }}</p>
         </div>
         <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 class="font-semibold text-green-800">Approved</h3>
-          <p class="text-2xl font-bold text-green-600">{{ myApprovedCount }}</p>
+          <h3 class="font-semibold text-green-800">Material Borrowed</h3>
+          <p class="text-2xl font-bold text-green-600">{{ myMaterialCount }}</p>
         </div>
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 class="font-semibold text-blue-800">Total Borrowed</h3>
-          <p class="text-2xl font-bold text-blue-600">{{ myTotalCount }}</p>
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h3 class="font-semibold text-purple-800">Total Borrowed</h3>
+          <p class="text-2xl font-bold text-purple-600">{{ myTotalCount }}</p>
         </div>
       </div>
     </section>
@@ -92,21 +92,8 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">วัตถุประสงค์</label>
-            <textarea v-model="borrowForm.purpose" required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              rows="3" placeholder="กรุณาระบุวัตถุประสงค์ในการยืม"></textarea>
-          </div>
-          
-          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ระยะเวลาการยืม (วัน)</label>
             <input type="number" v-model="borrowForm.duration" required min="1" max="30"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-          </div>
-          
-          <div v-if="borrowForm.item_type === 'material'">
-            <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนที่ต้องการ</label>
-            <input type="number" v-model="borrowForm.quantity" required min="1" :max="selectedItem?.quantity"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
           </div>
           
@@ -153,7 +140,8 @@ const MaterialStore = useMaterials()
 const materials = MaterialStore.materials
 
 const BorrowingStore = useBorrowing()
-const myBorrowingRequests = BorrowingStore.myBorrowingRequests
+const myEquipmentBorrowRecords = BorrowingStore.myEquipmentBorrowRecords
+const myMaterialBorrowRecords = BorrowingStore.myMaterialBorrowRecords
 
 const showBorrowModal = ref(false)
 const selectedItem = ref(null)
@@ -162,9 +150,7 @@ const borrowForm = ref({
   item_id: '',
   item_name: '',
   item_type: '',
-  purpose: '',
   duration: 7,
-  quantity: 1,
   notes: ''
 })
 
@@ -178,13 +164,9 @@ const availableMaterials = computed(() =>
 )
 
 // Borrowing statistics
-const myPendingCount = computed(() => 
-  myBorrowingRequests.value.filter(req => req.status === 'pending').length
-)
-const myApprovedCount = computed(() => 
-  myBorrowingRequests.value.filter(req => req.status === 'approved').length
-)
-const myTotalCount = computed(() => myBorrowingRequests.value.length)
+const myEquipmentCount = computed(() => myEquipmentBorrowRecords.value.length)
+const myMaterialCount = computed(() => myMaterialBorrowRecords.value.length)
+const myTotalCount = computed(() => myEquipmentCount.value + myMaterialCount.value)
 
 const formatDate = (unix) =>
   dayjs.unix(unix).locale('th').format('D MMMM YYYY')
@@ -195,9 +177,7 @@ const openBorrowModal = (type, item) => {
     item_id: item.id,
     item_name: item.name,
     item_type: type,
-    purpose: '',
     duration: 7,
-    quantity: type === 'material' ? 1 : 1,
     notes: ''
   }
   showBorrowModal.value = true
@@ -209,24 +189,35 @@ const closeBorrowModal = () => {
 }
 
 const submitBorrowRequest = async () => {
-  if (!borrowForm.value.purpose.trim()) {
-    alert('กรุณาระบุวัตถุประสงค์')
+  if (!borrowForm.value.duration || borrowForm.value.duration < 1) {
+    alert('กรุณาระบุระยะเวลาการยืม')
     return
   }
 
+  const now = Math.floor(Date.now() / 1000)
+  const returnDue = now + (borrowForm.value.duration * 24 * 60 * 60)
+
   const payload = {
-    ...borrowForm.value,
-    borrower_id: user.value.id,
-    borrower_name: user.value.full_name,
-    student_id: user.value.student_id,
-    status: 'pending'
+    user_id: user.value.id,
+    [borrowForm.value.item_type === 'equipment' ? 'equipment_id' : 'material_id']: borrowForm.value.item_id,
+    admin_id: null, // Will be set when admin approves
+    borrow_date: now,
+    return_due: returnDue,
+    returned: "ยังไม่คืน"
   }
 
-  const success = await BorrowingStore.createBorrowingRequest(payload)
+  let success = false
+  if (borrowForm.value.item_type === 'equipment') {
+    success = await BorrowingStore.createEquipmentBorrowRecord(payload)
+  } else {
+    success = await BorrowingStore.createMaterialBorrowRecord(payload)
+  }
+
   if (success) {
     alert('ส่งคำขอยืมเรียบร้อยแล้ว รอการอนุมัติจากผู้ดูแล')
     closeBorrowModal()
-    await BorrowingStore.fetchMyBorrowingRequests()
+    await BorrowingStore.fetchMyEquipmentBorrowRecords()
+    await BorrowingStore.fetchMyMaterialBorrowRecords()
   } else {
     alert('เกิดข้อผิดพลาดในการส่งคำขอ')
   }
@@ -241,6 +232,7 @@ onMounted(async () => {
   // Fetch data
   await EquipmentStore.fetchEquipments()
   await MaterialStore.fetchMaterials()
-  await BorrowingStore.fetchMyBorrowingRequests()
+  await BorrowingStore.fetchMyEquipmentBorrowRecords()
+  await BorrowingStore.fetchMyMaterialBorrowRecords()
 })
 </script>

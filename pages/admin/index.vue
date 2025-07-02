@@ -38,8 +38,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Pending Requests</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ pendingRequestsCount }}</p>
+            <p class="text-sm font-medium text-gray-600">Equipment Borrowed</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ equipmentBorrowedCount }}</p>
           </div>
         </div>
       </div>
@@ -52,17 +52,17 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Requests</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ borrowingRequests.length }}</p>
+            <p class="text-sm font-medium text-gray-600">Material Borrowed</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ materialBorrowedCount }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Recent Borrowing Requests -->
+    <!-- Recent Borrowing Records -->
     <div class="bg-white rounded-lg shadow-md p-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-800">Recent Borrowing Requests</h2>
+        <h2 class="text-lg font-semibold text-gray-800">Recent Borrowing Records</h2>
         <NuxtLink to="/admin/borrowing" class="text-blue-600 hover:text-blue-800 text-sm">
           View All →
         </NuxtLink>
@@ -73,39 +73,41 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Borrower</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="request in recentRequests" :key="request.id">
+            <tr v-for="record in recentRecords" :key="`${record.type}-${record.id}`">
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">{{ request.item_name }}</div>
-                <div class="text-sm text-gray-500">{{ request.item_type }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ request.borrower_name }}</div>
-                <div class="text-sm text-gray-500">{{ request.student_id }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ record.item_name }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                   :class="{
-                    'bg-yellow-100 text-yellow-800': request.status === 'pending',
-                    'bg-green-100 text-green-800': request.status === 'approved',
-                    'bg-red-100 text-red-800': request.status === 'rejected'
+                    'bg-blue-100 text-blue-800': record.type === 'equipment',
+                    'bg-green-100 text-green-800': record.type === 'material'
                   }">
-                  {{ request.status }}
+                  {{ record.type }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ record.user_name || 'Unknown User' }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                  :class="{
+                    'bg-gray-100 text-gray-800': record.returned === 'คืนแล้ว',
+                    'bg-yellow-100 text-yellow-800': record.returned === 'ยังไม่คืน',
+                    'bg-red-100 text-red-800': isOverdue(record.return_due) && record.returned !== 'คืนแล้ว'
+                  }">
+                  {{ record.returned === 'คืนแล้ว' ? 'returned' : (isOverdue(record.return_due) ? 'overdue' : 'borrowed') }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ formatDateTime(request.created_at) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <NuxtLink :to="`/admin/borrowing`" class="text-blue-600 hover:text-blue-900">
-                  View
-                </NuxtLink>
+                {{ formatDateTime(record.borrow_date) }}
               </td>
             </tr>
           </tbody>
@@ -134,24 +136,48 @@ const MaterialStore = useMaterials()
 const materials = MaterialStore.materials
 
 const BorrowingStore = useBorrowing()
-const borrowingRequests = BorrowingStore.borrowingRequests
+const equipmentBorrowRecords = BorrowingStore.equipmentBorrowRecords
+const materialBorrowRecords = BorrowingStore.materialBorrowRecords
 
-const pendingRequestsCount = computed(() => 
-  borrowingRequests.value.filter(req => req.status === 'pending').length
+const equipmentBorrowedCount = computed(() => 
+  equipmentBorrowRecords.value.filter(record => record.returned !== 'คืนแล้ว').length
 )
 
-const recentRequests = computed(() => 
-  borrowingRequests.value.slice(0, 5)
+const materialBorrowedCount = computed(() => 
+  materialBorrowRecords.value.filter(record => record.returned !== 'คืนแล้ว').length
 )
 
-const formatDateTime = (date) => {
-  const timestamp = date < 10000000000 ? date * 1000 : date
-  return dayjs(timestamp).locale('th').format('D MMM YYYY')
+const recentRecords = computed(() => {
+  const equipmentRecords = equipmentBorrowRecords.value.map(record => ({
+    ...record,
+    type: 'equipment',
+    item_name: record.equipment_name || 'Unknown Equipment'
+  }))
+  
+  const materialRecords = materialBorrowRecords.value.map(record => ({
+    ...record,
+    type: 'material',
+    item_name: record.material_name || 'Unknown Material'
+  }))
+  
+  return [...equipmentRecords, ...materialRecords]
+    .sort((a, b) => b.created_at - a.created_at)
+    .slice(0, 5)
+})
+
+const formatDateTime = (timestamp) => {
+  return dayjs.unix(timestamp).locale('th').format('D MMM YYYY')
+}
+
+const isOverdue = (returnDue) => {
+  const now = Math.floor(Date.now() / 1000)
+  return now > returnDue
 }
 
 onMounted(async () => {
   await EquipmentStore.fetchEquipments()
   await MaterialStore.fetchMaterials()
-  await BorrowingStore.fetchBorrowingRequests()
+  await BorrowingStore.fetchEquipmentBorrowRecords()
+  await BorrowingStore.fetchMaterialBorrowRecords()
 })
 </script>
