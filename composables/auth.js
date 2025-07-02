@@ -6,8 +6,15 @@ export const useAuth = () => {
   const isLoading = ref(false);
 
   const isAuthenticated = computed(() => !!user.value);
-  const isAdmin = computed(() => user.value?.permission === "admin");
-  const isUser = computed(() => user.value?.permission === "user");
+  const isAdmin = computed(() => {
+    const role = user.value?.permission || user.value?.role;
+    console.log('isAdmin computed - role:', role);
+    return ["admin", "super_admin"].includes(role);
+  });
+  const isUser = computed(() => {
+    const role = user.value?.permission || user.value?.role;
+    return role === "user";
+  });
 
   const sendAuth = async (payload) => {
     try {
@@ -33,6 +40,7 @@ export const useAuth = () => {
           email: u.email,
           student_id: u.student_id,
           permission: u.permission || u.role || "user",
+          role: u.role || u.permission || "user",
           exp: jwtDecode(token).exp,
         };
 
@@ -93,14 +101,15 @@ export const useAuth = () => {
   };
 
   const getRedirectPath = (role = null) => {
-    const r = role || user.value?.permission || "user";
-    return r === "admin" ? "/admin" : "/";
+    const r = role || user.value?.permission || user.value?.role || "user";
+    console.log('getRedirectPath - role:', r);
+    return ["admin", "super_admin"].includes(r) ? "/admin" : "/";
   };
 
   const initializeAuth = async () => {
     const tokenCookie = useCookie("token");
     if (!tokenCookie.value) {
-      console.log('No token found');
+      console.log('No token found in initializeAuth');
       return false;
     }
 
@@ -109,7 +118,7 @@ export const useAuth = () => {
       const now = Math.floor(Date.now() / 1000);
 
       if (decoded.exp && decoded.exp < now) {
-        console.log('Token expired');
+        console.log('Token expired in initializeAuth');
         tokenCookie.value = null;
         user.value = null;
         return false;
@@ -127,6 +136,10 @@ export const useAuth = () => {
       };
 
       console.log('User initialized from token:', user.value);
+      
+      // รอให้ reactive system อัพเดท
+      await nextTick();
+      
       return true;
     } catch (err) {
       console.error('Token decode error:', err);

@@ -68,7 +68,11 @@
         </NuxtLink>
       </div>
       
-      <div class="overflow-x-auto">
+      <div v-if="recentRecords.length === 0" class="text-center py-8 text-gray-500">
+        No borrowing records found
+      </div>
+      
+      <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -175,9 +179,15 @@ const isOverdue = (returnDue) => {
 }
 
 onMounted(async () => {
-  await EquipmentStore.fetchEquipments()
-  await MaterialStore.fetchMaterials()
-  await BorrowingStore.fetchEquipmentBorrowRecords()
-  await BorrowingStore.fetchMaterialBorrowRecords()
+  try {
+    await Promise.all([
+      EquipmentStore.fetchEquipments(),
+      MaterialStore.fetchMaterials(),
+      BorrowingStore.fetchEquipmentBorrowRecords(),
+      BorrowingStore.fetchMaterialBorrowRecords()
+    ])
+  } catch (error) {
+    console.error('Error loading dashboard data:', error)
+  }
 })
 </script>

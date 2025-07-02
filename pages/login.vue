@@ -90,7 +90,7 @@ const onLogin = async () => {
             // รอสักครู่แล้วค่อย redirect
             setTimeout(() => {
                 router.push(redirectPath);
-            }, 1000);
+            }, 1500);
 
         } else {
             error.value = result.message || 'Invalid email or password';

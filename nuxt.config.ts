@@ -6,7 +6,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       API_BASE: process.env.NUXT_PUBLIC_API_BASE,
-      POKEMON_API_BASE: process.env.POKEMON_PUBLIC_API_BASE,
     },
   },
   css: ["~/assets/css/main.css"],
