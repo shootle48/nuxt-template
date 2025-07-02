@@ -5,7 +5,7 @@ export const client = (ops) => {
   const token = useCookie("token"); // หรือ 'refToken' ถ้าคุณใช้ชื่อนี้
 
   const api = axios.create({
-    baseURL: ops.baseURL || config.public.API_BASE,
+    baseURL: config.public.API_BASE,
     headers: {
       "Content-Type": "application/json",
       ...(token.value && { Authorization: `Bearer ${token.value}` }),

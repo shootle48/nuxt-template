@@ -1,24 +1,63 @@
-// middleware/auth.global.ts
-import { jwtDecode } from "jwt-decode"
+import { jwtDecode } from "jwt-decode";
 
-export default defineNuxtRouteMiddleware((to, from) => {
-  const token = useCookie("token")
+export default defineNuxtRouteMiddleware(async (to, from) => {
+  const token = useCookie("token");
+  const { user, initializeAuth, getRedirectPath } = useAuth();
+  
+
+  const publicRoutes = ["/login", "/register"];
+  const isPublicRoute = publicRoutes.includes(to.path);
 
   if (!token?.value) {
-    return navigateTo("/login")
+    if (!isPublicRoute) {
+      return navigateTo("/login");
+    }
+    return;
   }
 
   try {
-    const decoded = jwtDecode(token.value)
+    const decoded = jwtDecode(token.value);
+    const now = Math.floor(Date.now() / 1000);
 
-    const now = Math.floor(Date.now() / 1000)
     if (decoded.exp && decoded.exp < now) {
-      return navigateTo("/login")
+      console.warn("Token expired");
+      token.value = null;
+      if (!isPublicRoute) return navigateTo("/login");
+      return;
     }
 
-    // token valid → ปล่อยผ่าน
+    if (!user.value) {
+      const success = await initializeAuth();
+      if (!success && !isPublicRoute) {
+        return navigateTo("/login");
+      }
+    }
+
+    if (isPublicRoute && user.value) {
+      const redirectPath = getRedirectPath();
+      return navigateTo(redirectPath);
+    }
+
+    const userRole = decoded.permission || decoded.role || "user";
+
+    if (to.path.startsWith("/admin")) {
+      if (!["admin", "super_admin"].includes(userRole)) {
+        return navigateTo("/");
+      }
+    }
+
+    if (to.path === "/") {
+      const redirectPath = getRedirectPath(userRole);
+      if (redirectPath !== "/") {
+        return navigateTo(redirectPath);
+      }
+    }
+
   } catch (e) {
-    console.error("Invalid JWT:", e)
-    return navigateTo("/login")
+    console.error("Invalid JWT:", e);
+    token.value = null;
+    if (!isPublicRoute) {
+      return navigateTo("/login");
+    }
   }
-})
+});
